@@ -62,6 +62,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_function_id,
+                        null,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }

@@ -25,6 +25,7 @@ class FileReferenceCacheProvider
     const FILE_CLASS_REFERENCE_CACHE_NAME = 'file_class_references';
     const ANALYZED_METHODS_CACHE_NAME = 'analyzed_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
+    const CLASS_CLASS_CACHE_NAME = 'class_class_references';
     const FILE_CLASS_MEMBER_CACHE_NAME = 'file_class_member_references';
     const ISSUES_CACHE_NAME = 'issues';
     const FILE_MAPS_CACHE_NAME = 'file_maps';
@@ -122,6 +123,34 @@ class FileReferenceCacheProvider
         }
 
         $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+
+        if (!is_readable($class_member_cache_location)) {
+            return null;
+        }
+
+        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+
+        if (!is_array($class_member_reference_cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $class_member_reference_cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     */
+    public function getCachedMethodClassReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_CLASS_CACHE_NAME;
 
         if (!is_readable($class_member_cache_location)) {
             return null;
@@ -335,6 +364,22 @@ class FileReferenceCacheProvider
         $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_REFERENCE_CACHE_NAME;
 
         file_put_contents($reference_cache_location, serialize($file_class_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedMethodClassReferences(array $member_references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_CLASS_CACHE_NAME;
+
+        file_put_contents($member_cache_location, serialize($member_references));
     }
 
     /**

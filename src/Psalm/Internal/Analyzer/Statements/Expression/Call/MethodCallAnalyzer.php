@@ -1010,7 +1010,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             list($calling_method_class) = explode('::', $context->calling_function_id);
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
-                strtolower((string) $method_id)
+                strtolower($method_id->fq_class_name),
+                $method_id->method_name
             );
         }
 

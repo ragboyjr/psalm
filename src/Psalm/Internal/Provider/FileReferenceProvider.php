@@ -68,6 +68,11 @@ class FileReferenceProvider
     /**
      * @var array<string, array<string, bool>>
      */
+    private static $method_references_to_classes = [];
+
+    /**
+     * @var array<string, array<string, bool>>
+     */
     private static $method_references_to_class_members = [];
 
     /**
@@ -373,6 +378,14 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
+    public function getAllMethodReferencesToClasses()
+    {
+        return self::$method_references_to_classes;
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
     public function getAllMethodReferencesToClassMembers()
     {
         return self::$method_references_to_class_members;
@@ -436,6 +449,14 @@ class FileReferenceProvider
             }
 
             self::$method_references_to_class_members = $method_references_to_class_members;
+
+            $method_references_to_classes = $this->cache->getCachedMethodClassReferences();
+
+            if ($method_references_to_classes === null) {
+                return false;
+            }
+
+            self::$method_references_to_classes = $method_references_to_classes;
 
             $method_references_to_missing_class_members = $this->cache->getCachedMethodMissingMemberReferences();
 
@@ -540,6 +561,7 @@ class FileReferenceProvider
         if ($this->cache) {
             $this->cache->setCachedFileReferences(self::$file_references);
             $this->cache->setCachedFileClassReferences(self::$file_references_to_classes);
+            $this->cache->setCachedMethodClassReferences(self::$method_references_to_classes);
             $this->cache->setCachedMethodMemberReferences(self::$method_references_to_class_members);
             $this->cache->setCachedFileMemberReferences(self::$file_references_to_class_members);
             $this->cache->setCachedMethodMissingMemberReferences(self::$method_references_to_missing_class_members);
@@ -554,10 +576,24 @@ class FileReferenceProvider
     }
 
     /**
+     * @param ?lowercase-string $referenced_class
      * @return void
      */
-    public function addMethodReferenceToClassMember(string $calling_function_id, string $referenced_member_id)
-    {
+    public function addMethodReferenceToClassMember(
+        string $calling_function_id,
+        ?string $referenced_class,
+        string $referenced_member_name
+    ) {
+        if ($referenced_class) {
+            if (!isset(self::$method_references_to_classes[$referenced_class])) {
+                self::$method_references_to_classes[$referenced_class] = [$calling_function_id => true];
+            } else {
+                self::$method_references_to_classes[$referenced_class][$calling_function_id] = true;
+            }
+        }
+
+        $referenced_member_id = ($referenced_class !== null ? $referenced_class . '::' : '') . $referenced_member_name;
+
         if (!isset(self::$method_references_to_class_members[$referenced_member_id])) {
             self::$method_references_to_class_members[$referenced_member_id] = [$calling_function_id => true];
         } else {
@@ -627,7 +663,8 @@ class FileReferenceProvider
 
     public function isClassReferenced(string $fq_class_name_lc) : bool
     {
-        return isset(self::$file_references_to_classes[$fq_class_name_lc]);
+        return isset(self::$file_references_to_classes[$fq_class_name_lc])
+            || isset(self::$method_references_to_classes[$fq_class_name_lc]);
     }
 
     public function isMethodParamUsed(string $method_id, int $offset) : bool
@@ -698,6 +735,25 @@ class FileReferenceProvider
      *
      * @return void
      */
+    public function addMethodReferencesToClasses(array $references)
+    {
+        foreach ($references as $key => $reference) {
+            if (isset(self::$method_references_to_classes[$key])) {
+                self::$method_references_to_classes[$key] = array_merge(
+                    $reference,
+                    self::$method_references_to_classes[$key]
+                );
+            } else {
+                self::$method_references_to_classes[$key] = $reference;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     *
+     * @return void
+     */
     public function addMethodReferencesToClassMembers(array $references)
     {
         foreach ($references as $key => $reference) {
@@ -754,6 +810,16 @@ class FileReferenceProvider
                 self::$method_param_uses[$method_id] = $method_param_uses;
             }
         }
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     *
+     * @return void
+     */
+    public function setCallingMethodReferencesToClasses(array $references)
+    {
+        self::$method_references_to_classes = $references;
     }
 
     /**
@@ -999,6 +1065,7 @@ class FileReferenceProvider
         self::$file_references = [];
         self::$file_references_to_class_members = [];
         self::$method_references_to_class_members = [];
+        self::$method_references_to_classes = [];
         self::$file_references_to_missing_class_members = [];
         self::$method_references_to_missing_class_members = [];
         self::$references_to_mixed_member_names = [];

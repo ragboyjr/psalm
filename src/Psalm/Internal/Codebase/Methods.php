@@ -148,9 +148,11 @@ class Methods
             ) {
                 foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
                     if ($calling_function_id) {
+                        $potential_id_parts = explode('::', $potential_id);
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_function_id,
-                            $potential_id
+                            strtolower($potential_id_parts[0]),
+                            $potential_id_parts[1]
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(
@@ -163,7 +165,8 @@ class Methods
                 if ($calling_function_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_function_id,
-                        strtolower((string) $declaring_method_id)
+                        strtolower($declaring_method_id->fq_class_name),
+                        $declaring_method_id->method_name
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
@@ -181,7 +184,8 @@ class Methods
             }
 
             foreach ($class_storage->class_implements as $fq_interface_name) {
-                $interface_method_id_lc = strtolower($fq_interface_name . '::' . $method_name);
+                $fq_interface_name_lc = strtolower($fq_interface_name);
+                $interface_method_id_lc = $fq_interface_name_lc . '::' . $method_name;
 
                 if ($this->collect_locations && $code_location) {
                     $this->file_reference_provider->addCallingLocationForClassMethod(
@@ -193,7 +197,8 @@ class Methods
                 if ($calling_function_id) {
                     $this->file_reference_provider->addMethodReferenceToClassMember(
                         $calling_function_id,
-                        $interface_method_id_lc
+                        $fq_interface_name_lc,
+                        $method_name
                     );
                 } elseif ($source_file_path) {
                     $this->file_reference_provider->addFileReferenceToClassMember(
@@ -223,7 +228,8 @@ class Methods
                         // also store failures in case the method is added later
                         $this->file_reference_provider->addMethodReferenceToClassMember(
                             $calling_function_id,
-                            strtolower((string) $overridden_method_id)
+                            strtolower($overridden_method_id->fq_class_name),
+                            $overridden_method_id->method_name
                         );
                     } elseif ($source_file_path) {
                         $this->file_reference_provider->addFileReferenceToClassMember(

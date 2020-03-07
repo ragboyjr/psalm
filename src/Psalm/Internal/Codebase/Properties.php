@@ -110,7 +110,8 @@ class Properties
             if ($context && $context->calling_function_id) {
                 $this->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_function_id,
-                    strtolower($declaring_property_class) . '::$' . $property_name
+                    strtolower($declaring_property_class),
+                    '$' . $property_name
                 );
             } elseif ($source) {
                 $this->file_reference_provider->addFileReferenceToClassMember(
